@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TaskFlow — Проекты</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="app-sidebar">
+      <h2 style="font-size:1.1rem; margin-bottom:1.5rem; color:#fff;">TaskFlow</h2>
+      <nav class="side-nav">
+        <a href="/dashboard.html">📊 Дашборд</a>
+        <a href="/tasks.html">✅ Задачи</a>
+        <a href="/projects.html" class="active">📁 Проекты</a>
+        <a href="/admin.html" id="adminLink" style="display:none;">⚙️ Админ</a>
+      </nav>
+      <div class="side-user">
+        <div id="userInfo">...</div>
+        <button class="btn btn-ghost" id="logoutBtn"
+                style="margin-top:.75rem; width:100%; color:#cbd5e1; border-color:#334155;">
+          Выйти
+        </button>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <h1>Проекты</h1>
+      <p style="color:var(--muted);">Все активные проекты команды.</p>
+      <div id="projectsGrid" class="tasks-grid" style="margin-top: 20px;"></div>
+    </main>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/projects.js"></script>
+</body>
+</html>

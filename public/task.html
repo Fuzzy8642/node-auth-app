@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TaskFlow — Задача</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .task-detail { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-top: 20px; }
+    .detail-row { margin-bottom: 15px; }
+    .detail-label { font-size: 12px; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+    .detail-value { font-size: 16px; color: var(--text); }
+    .comments-section { margin-top: 30px; }
+    .comment { background: #f8fafc; padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #e2e8f0; }
+    .comment-author { font-weight: bold; font-size: 14px; margin-bottom: 5px; color: #0f172a;}
+    .comment-date { font-size: 12px; color: #94a3b8; float: right; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="app-sidebar">
+      <h2 style="font-size:1.1rem; margin-bottom:1.5rem; color:#fff;">TaskFlow</h2>
+      <nav class="side-nav">
+        <a href="/dashboard.html">📊 Дашборд</a>
+        <a href="/tasks.html">✅ Задачи</a>
+        <a href="/projects.html">📁 Проекты</a>
+        <a href="/admin.html" id="adminLink" style="display:none;">⚙️ Админ</a>
+      </nav>
+      <div class="side-user">
+        <div id="userInfo">...</div>
+        <button class="btn btn-ghost" id="logoutBtn"
+                style="margin-top:.75rem; width:100%; color:#cbd5e1; border-color:#334155;">
+          Выйти
+        </button>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <div style="margin-bottom: 20px;">
+        <a href="/dashboard.html" style="color: var(--muted); text-decoration: none;">← Назад к задачам</a>
+      </div>
+      
+      <div id="taskContainer">
+        <p>Загрузка...</p>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/task-detail.js"></script>
+</body>
+</html>

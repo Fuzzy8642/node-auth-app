@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TaskFlow — Дашборд</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    /* Стили для модалки */
+    .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 100; }
+    .modal-backdrop.open { display: flex; }
+    .modal { background: #fff; padding: 24px; border-radius: 12px; width: 100%; max-width: 500px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+    .modal h2 { margin-top: 0; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; }
+    .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="app-sidebar">
+      <h2 style="font-size:1.1rem; margin-bottom:1.5rem; color:#fff;">TaskFlow</h2>
+      <nav class="side-nav">
+        <a href="/dashboard.html" class="active">📊 Дашборд</a>
+        <a href="/tasks.html">✅ Задачи</a>
+        <a href="/projects.html">📁 Проекты</a>
+        <a href="/admin.html" id="adminLink" style="display:none;">⚙️ Админ</a>
+      </nav>
+      <div class="side-user">
+        <div id="userInfo">...</div>
+        <button class="btn btn-ghost" id="logoutBtn"
+                style="margin-top:.75rem; width:100%; color:#cbd5e1; border-color:#334155;">
+          Выйти
+        </button>
+      </div>
+    </aside>
+
+    <main class="app-main">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+          <h1>Мои задачи</h1>
+          <p style="color:var(--muted); margin: 0;">Ближайшие дедлайны и активные задачи.</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-outline" onclick="openProjectModal()" style="background: white; border: 1px solid #cbd5e1; color: #333; padding: 8px 16px; border-radius: 6px; cursor: pointer;">+ Создать проект</button>
+          <button class="btn btn-primary" onclick="openTaskModal()" style="background: #2563eb; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">+ Создать задачу</button>
+        </div>
+      </div>
+      
+      <div id="stats" style="display:grid; gap:1rem; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); margin:1.5rem 0;"></div>
+      <div class="tasks-grid" id="tasksGrid"></div>
+    </main>
+  </div>
+
+  <!-- Модалка для создания задачи -->
+  <div class="modal-backdrop" id="taskModal">
+    <div class="modal">
+      <h2>Новая задача</h2>
+      <form id="createTaskForm">
+        <div class="form-group">
+          <label>Название</label>
+          <input type="text" id="taskTitle" required>
+        </div>
+        <div class="form-group">
+          <label>Описание</label>
+          <textarea id="taskDesc" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Проект</label>
+          <select id="taskProject" required></select>
+        </div>
+        <div class="form-group">
+          <label>Приоритет</label>
+          <select id="taskPriority">
+            <option value="low">Низкий</option>
+            <option value="medium" selected>Средний</option>
+            <option value="high">Высокий</option>
+            <option value="critical">Критический</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Исполнитель (только для manager/admin)</label>
+          <select id="taskAssignee"></select>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('taskModal')">Отмена</button>
+          <button type="submit" class="btn btn-primary">Создать</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Модалка для создания проекта -->
+  <div class="modal-backdrop" id="projectModal">
+    <div class="modal">
+      <h2>Новый проект</h2>
+      <form id="createProjectForm">
+        <div class="form-group">
+          <label>Название проекта</label>
+          <input type="text" id="projTitle" required>
+        </div>
+        <div class="form-group">
+          <label>Описание</label>
+          <textarea id="projDesc" rows="3"></textarea>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" onclick="closeModal('projectModal')">Отмена</button>
+          <button type="submit" class="btn btn-primary">Создать</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/tasks.js"></script>
+  <script>
+    // --- УПРАВЛЕНИЕ МОДАЛКАМИ ---
+    function openModal(id) { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+    async function openTaskModal() {
+      const me = await window.currentUser;
+
+      // Загружаем проекты для селекта
+      const projRes = await fetch('/api/projects', { credentials: 'include' });
+      const projects = await projRes.json();
+      const projSelect = document.getElementById('taskProject');
+      projSelect.innerHTML = projects.map(p => `<option value="${p.id}">${p.title}</option>`).join('');
+      
+      // Загружаем доступных исполнителей (для admin/manager вернутся все, для user — только он сам)
+      const userRes = await fetch('/api/tasks/assignees', { credentials: 'include' });
+      const assigneeSelect = document.getElementById('taskAssignee');
+      assigneeSelect.disabled = false;
+      
+      if (userRes.ok) {
+        const users = await userRes.json();
+        if (users.length > 1) {
+          assigneeSelect.innerHTML = `<option value="">Не назначен</option>` +
+            users.map(u => `<option value="${u.id}">${u.username}</option>`).join('');
+        } else if (me) {
+          assigneeSelect.innerHTML = `<option value="${me.id}">${me.username} (Вы)</option>`;
+          assigneeSelect.disabled = true;
+        }
+      }
+
+      openModal('taskModal');
+    }
+
+
+    function openProjectModal() {
+      openModal('projectModal');
+    }
+
+    // --- ОТПРАВКА ФОРМ ---
+    document.getElementById('createTaskForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = {
+        title: document.getElementById('taskTitle').value,
+        description: document.getElementById('taskDesc').value,
+        project_id: document.getElementById('taskProject').value,
+        priority: document.getElementById('taskPriority').value,
+        assignee_id: document.getElementById('taskAssignee').value || null
+      };
+
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        credentials: 'include'
+      });
+
+      if (res.ok) {
+        closeModal('taskModal');
+        e.target.reset();
+        renderTasks(); // Обновляем список
+      } else {
+        const err = await res.json();
+        alert('Ошибка: ' + err.error);
+      }
+    });
+
+    document.getElementById('createProjectForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = {
+        title: document.getElementById('projTitle').value,
+        description: document.getElementById('projDesc').value
+      };
+
+      const res = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+        credentials: 'include'
+      });
+
+      if (res.ok) {
+        closeModal('projectModal');
+        e.target.reset();
+        alert('Проект создан!');
+      } else {
+        const err = await res.json();
+        alert('Ошибка: ' + err.error);
+      }
+    });
+  </script>
+</body>
+</html>
