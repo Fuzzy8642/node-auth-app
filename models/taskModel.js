@@ -11,15 +11,14 @@ const SELECT_BASE = `
   JOIN projects p ON p.id = t.project_id
 `;
 
-
 const stmts = {
-  all:            db.prepare(`${SELECT_BASE} WHERE t.deleted_at IS NULL ORDER BY t.created_at DESC`),
-  byAssignee:     db.prepare(`${SELECT_BASE} WHERE t.assignee_id = ? AND t.deleted_at IS NULL ORDER BY t.created_at DESC`),
-  byProject:      db.prepare(`${SELECT_BASE} WHERE t.project_id = ? AND t.deleted_at IS NULL ORDER BY t.created_at DESC`),
-  findById:       db.prepare(`${SELECT_BASE} WHERE t.id = ? AND t.deleted_at IS NULL`),
-  deletedALL:     db.prepare('${SELECT_BASE} WHERE t.deleted_at IS NOT NULL ORDER BY t.deleted_at DESC'),
-  remove:         db.prepare('UPDATE tasks SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?'),
-  restore:        db.prepare('UPDATE tasks SET dleted_at = NULL WHERE id = ?'),
+  all:        db.prepare(`${SELECT_BASE} WHERE t.deleted_at IS NULL ORDER BY t.created_at DESC`),
+  byAssignee: db.prepare(`${SELECT_BASE} WHERE t.assignee_id = ? AND t.deleted_at IS NULL ORDER BY t.created_at DESC`),
+  byProject:  db.prepare(`${SELECT_BASE} WHERE t.project_id = ? AND t.deleted_at IS NULL ORDER BY t.created_at DESC`),
+  findById:   db.prepare(`${SELECT_BASE} WHERE t.id = ? AND t.deleted_at IS NULL`),
+  deletedALL: db.prepare(`${SELECT_BASE} WHERE t.deleted_at IS NOT NULL ORDER BY t.deleted_at DESC`),
+  remove:     db.prepare(`UPDATE tasks SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?`),
+  restore:    db.prepare(`UPDATE tasks SET deleted_at = NULL WHERE id = ?`),
   insert: db.prepare(`
     INSERT INTO tasks (project_id, title, description, priority, author_id, assignee_id, due_date)
     VALUES (@project_id, @title, @description, @priority, @author_id, @assignee_id, @due_date)
@@ -29,9 +28,8 @@ const stmts = {
     SET title = @title, description = @description, status = @status,
         priority = @priority, assignee_id = @assignee_id, due_date = @due_date,
         updated_at = CURRENT_TIMESTAMP
-    WHERE id = @id
-  `),
-  remove: db.prepare(`DELETE FROM tasks WHERE id = ?`)
+    WHERE id = @id AND deleted_at IS NULL
+  `)
 };
 
 function filter({ q, status, priority, assigneeId, restrictToUserId } = {}) {
@@ -70,14 +68,14 @@ function filter({ q, status, priority, assigneeId, restrictToUserId } = {}) {
 }
 
 module.exports = {
-  all:         () => stmts.all.all(),
-  byAssignee:  (uid) => stmts.byAssignee.all(uid),
-  byProject:   (pid) => stmts.byProject.all(pid),
-  findById:    (id) => stmts.findById.get(id),
-  create:      (d) => stmts.insert.run(d),
-  update:      (d) => stmts.update.run(d),
-  remove:      (id) => stmts.remove.run(id),
-  deletedALL:  ()=> stmts.deletedALL(),
-  restore:     (id)=>stmts.restore.run(id),
+  all:        () => stmts.all.all(),
+  byAssignee: (uid) => stmts.byAssignee.all(uid),
+  byProject:  (pid) => stmts.byProject.all(pid),
+  findById:   (id) => stmts.findById.get(id),
+  create:     (d) => stmts.insert.run(d),
+  update:     (d) => stmts.update.run(d),
+  remove:     (id) => stmts.remove.run(id),
+  deletedALL: () => stmts.deletedALL.all(),
+  restore:    (id) => stmts.restore.run(id),
   filter
 };

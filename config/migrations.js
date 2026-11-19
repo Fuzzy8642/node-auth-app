@@ -6,37 +6,7 @@ function columnExists(table, column) {
 }
 
 function runMigrations() {
-  // 1. Добавляем роль
-  if (!columnExists('users', 'role')) {
-    db.exec(`ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'`);
-    console.log('  ↳ users.role добавлен');
-  }
-
-  // 2. Добавляем email (понадобится для уведомлений)
-  if (!columnExists('users', 'email')) {
-    db.exec(`ALTER TABLE users ADD COLUMN email TEXT`);
-    console.log('  ↳ users.email добавлен');
-  }
-
-  if(!column('user', 'delete_at')){
-    db.exec('ALTER TABLE users ADD COLUMN deleted_at DATETIME DEFAULT NULL');
-    console.log('users.deleted_at добавлен')
-  }
-
-  if(!columnExists('tasks', 'deleted_at')){
-    db.exec('ALTER TABLE tasks ADD COLUMN deleted_at DATETIME DEFAULT NULL');
-    console.log('tasks.deleted_at добавлен')
-  }
-
-  // 3. Первого пользователя делаем админом
-  const hasAdmin = db.prepare(`SELECT COUNT(*) AS c FROM users WHERE role = 'admin'`).get().c;
-  const total   = db.prepare(`SELECT COUNT(*) AS c FROM users`).get().c;
-  if (total > 0 && hasAdmin === 0) {
-    db.prepare(`UPDATE users SET role = 'admin' WHERE id = (SELECT MIN(id) FROM users)`).run();
-    console.log('  ↳ Первый пользователь назначен администратором');
-  }
-
-  // 4. Новые таблицы
+  // 1. Сначала создаём новые таблицы (если их ещё нет)
   db.exec(`
     CREATE TABLE IF NOT EXISTS projects (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -90,6 +60,36 @@ function runMigrations() {
     CREATE INDEX IF NOT EXISTS idx_tasks_assignee ON tasks(assignee_id);
     CREATE INDEX IF NOT EXISTS idx_comments_task  ON comments(task_id);
   `);
+
+  // 2. Добавляем колонки в users
+  if (!columnExists('users', 'role')) {
+    db.exec(`ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'`);
+    console.log('  ↳ users.role добавлен');
+  }
+
+  if (!columnExists('users', 'email')) {
+    db.exec(`ALTER TABLE users ADD COLUMN email TEXT`);
+    console.log('  ↳ users.email добавлен');
+  }
+
+  if (!columnExists('users', 'deleted_at')) {
+    db.exec(`ALTER TABLE users ADD COLUMN deleted_at DATETIME DEFAULT NULL`);
+    console.log('  ↳ users.deleted_at добавлен');
+  }
+
+  // 3. Добавляем колонку deleted_at в tasks
+  if (!columnExists('tasks', 'deleted_at')) {
+    db.exec(`ALTER TABLE tasks ADD COLUMN deleted_at DATETIME DEFAULT NULL`);
+    console.log('  ↳ tasks.deleted_at добавлен');
+  }
+
+  // 4. Первого пользователя делаем админом
+  const hasAdmin = db.prepare(`SELECT COUNT(*) AS c FROM users WHERE role = 'admin'`).get().c;
+  const total    = db.prepare(`SELECT COUNT(*) AS c FROM users`).get().c;
+  if (total > 0 && hasAdmin === 0) {
+    db.prepare(`UPDATE users SET role = 'admin' WHERE id = (SELECT MIN(id) FROM users)`).run();
+    console.log('  ↳ Первый пользователь назначен администратором');
+  }
 
   console.log('✅ Миграции применены');
 }

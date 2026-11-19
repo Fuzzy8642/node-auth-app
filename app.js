@@ -1,35 +1,33 @@
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
-const authRoutes = require('./routes/authRoutes');
-const adminRoutes = require('./routes/adminRoutes');
 
+// 1. СНАЧАЛА запускаем миграции (до импорта роутов и моделей!)
 const { runMigrations } = require('./config/migrations');
 runMigrations();
+
+// 2. ТЕПЕРЬ подключаем маршруты (внутри которых грузятся модели)
+const authRoutes = require('./routes/authRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware для парсинга JSON и данных форм
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Настройка сессий
 app.use(session({
   secret: 'dev-secret-change-in-production',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false } // для локальной разработки
+  cookie: { secure: false }
 }));
 
-// Статические файлы (HTML, CSS, JS)
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Маршруты авторизации
 const apiRoutes = require('./routes');
 app.use('/api', apiRoutes);
 
-// Главная страница — редирект на форму входа
 app.get('/', (req, res) => {
   res.redirect('/index.html');
 });
